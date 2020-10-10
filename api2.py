@@ -8,9 +8,6 @@ from sqlalchemy.orm import sessionmaker
 
 WEBHOOK_LISTEN = "0.0.0.0"
 WEBHOOK_PORT = 8080
-CLIENT_ID = 'gp762nuuoqcoxypju8c569th9wz7q5'
-TWITCH_AUTH_TOKEN = 'Bearer 984zuraizg1z1ppuwwqva7kkxrqso6'
-
 API_TOKEN = '1231129772:AAG_jgw3O8dxG374MTZg8MtHMNMXVvZH9rw'
 bot = TeleBot(API_TOKEN)
 
@@ -25,6 +22,7 @@ Session.configure(bind=db.engine)
 session = Session()
 
 
+# MAIN FUNCTION
 @app.route('/<token>', methods=['POST'])
 # process only requests with correct bot token
 def handle(token):
@@ -33,6 +31,7 @@ def handle(token):
         update = types.Update.de_json(request_body_dict)
         print(update.__repr__())
         bot.process_new_updates([update])
+        #       Process new update
         return app.response_class(
             response='OK',
             status=200,
@@ -48,7 +47,7 @@ def handle(token):
 
 @bot.message_handler(commands=["start"])
 def send_welcome(message):
-    print('hhhh')
+    bot.send_animation(message.chat.id, "https://gph.is/g/ZdX9B61")
     bot.send_message(message.chat.id, "Hi, i am Highlighter bot. ")
 
 
