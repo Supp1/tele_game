@@ -3,3 +3,4 @@ static
 .idea
 venv/
 ngrok.exe
+sqlite3.exe
