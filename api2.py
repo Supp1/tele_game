@@ -1,11 +1,13 @@
+import requests
 import random
 from telebot import TeleBot, types
 from flask import Flask
+from flask import request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import sessionmaker
 
 WEBHOOK_LISTEN = "0.0.0.0"
-WEBHOOK_PORT = 8443
+WEBHOOK_PORT = 8080
 CLIENT_ID = 'gp762nuuoqcoxypju8c569th9wz7q5'
 TWITCH_AUTH_TOKEN = 'Bearer 984zuraizg1z1ppuwwqva7kkxrqso6'
 
@@ -23,48 +25,31 @@ Session.configure(bind=db.engine)
 session = Session()
 
 
-class HighlightClip(db.Model):
-    id = db.Column(db.BigInteger, primary_key=True)
-    url = db.Column(db.String(500))
-    state = db.Column(db.Boolean())
-
-    def __repr__(self):
-        return f'<Clip {self.id}, {self.url}, {self.state}'
-
-
-class TgUser(db.Model):
-    id = db.Column(db.BigInteger, primary_key=True)
-    chat_id = db.Column(db.Integer)
-
-    def __repr__(self):
-        return f'<Clip {self.id}, {self.url}, {self.state}'
+@app.route('/<token>', methods=['POST'])
+# process only requests with correct bot token
+def handle(token):
+    if token == bot.token:
+        request_body_dict = request.json
+        update = types.Update.de_json(request_body_dict)
+        print(update.__repr__())
+        bot.process_new_updates([update])
+        return app.response_class(
+            response='OK',
+            status=200,
+            mimetype='application/json'
+        )
+    else:
+        return app.response_class(
+            response='Error',
+            status=403,
+            mimetype='application/json'
+        )
 
 
 @bot.message_handler(commands=["start"])
 def send_welcome(message):
     print('hhhh')
     bot.send_message(message.chat.id, "Hi, i am Highlighter bot. ")
-
-
-@bot.message_handler(commands=['enable'])
-def enable_subscribe(message):
-    if TgUser.query.filter_by(chat_id=message.chat.id).first() is not None:
-        bot.send_message(message.chat.id, "You have been subscribed already")
-        return
-    user = TgUser(chat_id=message.chat.id)
-    db.session.add(user)
-    db.session.commit()
-    bot.send_message(message.chat.id, "Success")
-
-
-@bot.message_handler(commands=['disable'])
-def disable_subscribe(message):
-    if TgUser.query.filter_by(chat_id=message.chat.id).first() is None:
-        bot.send_message(message.chat.id, "You haven't subscribed yet")
-        return
-    TgUser.query.filter(TgUser.chat_id == message.chat.id).delete()
-    db.session.commit()
-    bot.send_message(message.chat.id, "Success")
 
 
 @bot.message_handler(content_types=["text"])
@@ -90,12 +75,6 @@ def handle_messages(message):
         bot.send_message(message.chat.id, 'Ты проиграл паренёчек', reply_markup=keyboard_hider)
 
 
-# @bot.message_handler(commands=["help"])
-# def send_help(message):
-#     bot.send_message(message.chat.id, '', parse_mode="Markdown")
-
 if __name__ == '__main__':
-    app.run(debug=True, host=WEBHOOK_LISTEN, port=WEBHOOK_PORT)
     db.create_all()
-    print('hh')
-    bot.polling(none_stop=True)
+    app.run(debug=True, host=WEBHOOK_LISTEN, port=WEBHOOK_PORT)
