@@ -97,5 +97,4 @@ def handle_messages(message):
 if __name__ == '__main__':
     app.run(debug=True, host=WEBHOOK_LISTEN, port=WEBHOOK_PORT)
     db.create_all()
-    print('hh')
     bot.polling(none_stop=True)
