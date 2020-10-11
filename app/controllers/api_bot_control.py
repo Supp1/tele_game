@@ -22,3 +22,13 @@ def handle(token):
         ), 200)
         response.headers['Content-Type'] = 'application/json'
         return response
+
+
+@bp.route('/test', methods=['POST, GET'])
+def handle2():
+    print('EVRYTHING IS FINE')
+    response = make_response(jsonify(
+        response='OK'
+    ), 200)
+    response.headers['Content-Type'] = 'application/json'
+    return response
