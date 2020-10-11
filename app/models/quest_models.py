@@ -4,6 +4,9 @@ from app import db
 class BotMessage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     message = db.Column(db.String(2048), nullable=False)
+    send_strategy = db.Column(db.Integer, nullable=False)
+    timeout_duration = db.Column(db.Integer)
+    next_state_id = db.Column(db.Integer)
     actions = db.relationship('Action', backref='bot_message', lazy=True)
 
 

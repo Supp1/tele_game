@@ -17,7 +17,7 @@ def create_app():
 
     bot = TeleBot(API_TOKEN)
     app = Flask(__name__)
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{ROOT_DIR}/static/db/tele_game_main.db'
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{ROOT_DIR}/static/db/tele_game_prod.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
     db = SQLAlchemy(app)
     init_db()

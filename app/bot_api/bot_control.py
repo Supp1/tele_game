@@ -1,6 +1,6 @@
 import random
 import re
-
+import time
 from telebot import types
 
 from app import bot
@@ -23,17 +23,15 @@ def send_welcome(message):
     else:
         users_services.create_user(message.chat.id)
     bot.send_animation(message.chat.id, "https://gph.is/g/ZdX9B61")
-    bot.send_message(message.chat.id, "Hi, i am Highlighter bot.")
-    startBotMessage: BotMessage = BotMessage.query.first()
-    keyboard = generate_user_action(startBotMessage)
-    bot.send_message(message.chat.id, startBotMessage.message, reply_markup=keyboard)
+    send_message(user, message)
 
 
 @bot.message_handler(regexp='^паспорт\s*')
+@bot.message_handler(commands=["info"])
 def get_bot_info(message):
     # Персона рандомная, или созданная преждевременно?
     # Если рандомная, возможно в ней хранить chat_id???
-    persona = Persona.query\
+    persona = Persona.query \
         .get(users_services.get_user(message.chat.id).persona_id)
     print('passport')
     # a = random.randint(1, 10) * 20
@@ -52,8 +50,8 @@ def get_bot_info(message):
     bot.send_message(
         message.chat.id,
         f"""     
-*  Жим:*  {persona.strength} 
-*  ICQ:*  {persona.intelligence}      
+*  Вес:*  {persona.strength} 
+*  IQ:*  {persona.intelligence}      
 *  Бег:*  {persona.agility}
             """,
         parse_mode='MarkdownV2'
@@ -78,7 +76,6 @@ def get_bot_info(message):
 def handle_messages(message):
     user = users_services.get_user(message.chat.id)
     if user:
-
         optional_of_chosen_action = action_services \
             .get_actions_by_message_id_and_phrase(user.state_id, message.text)
         # There could be problems, when user types message, which fits several actions
@@ -92,12 +89,7 @@ def handle_messages(message):
                 return
             try:
                 user.state_id = decision.state_id
-
-                nextStepMessage: BotMessage = BotMessage.query.get(decision.state_id)
-                keyboard = generate_user_action(nextStepMessage)
-                bot.send_message(message.chat.id,
-                                 nextStepMessage.message,
-                                 reply_markup=keyboard)
+                send_message(user, message)
                 db.session.commit()
             except Exception:
                 db.session.rollback()
@@ -106,8 +98,61 @@ def handle_messages(message):
         bot.sende_message(message.chat.id, 'Кто это?! Уйди от меня!!!')
 
 
-def generate_user_action(botMessage: BotMessage):
-    keyboard = types.ReplyKeyboardMarkup()
-    for action in botMessage.actions:
-        keyboard.add(types.KeyboardButton(text=action.user_phrase))
+def send_message(user: User, message):
+    currentMessage: BotMessage = BotMessage.query.get(user.state_id)
+    if currentMessage.send_strategy == 0:
+        keyboard = generate_user_action(currentMessage)
+        bot.send_message(message.chat.id,
+                         currentMessage.message,
+                         reply_markup=keyboard)
+    elif currentMessage.send_strategy == 1:
+        try:
+            time.sleep(currentMessage.timeout_duration / 1000)
+            bot.send_message(message.chat.id, currentMessage.message, reply_markup=types.ReplyKeyboardRemove())
+            user.state_id += 1
+            db.session.commit()
+            send_message(user, message)
+        except Exception:
+            db.session.rollback()
+            raise
+    elif currentMessage.send_strategy == 2:
+        try:
+            time.sleep(currentMessage.timeout_duration)
+            bot.send_message(message.chat.id, currentMessage.message, reply_markup=types.ReplyKeyboardRemove())
+            user.state_id += 1
+            db.session.commit()
+            send_message(user, message)
+        except Exception:
+            db.session.rollback()
+            raise
+    elif currentMessage.send_strategy == 3:
+        try:
+            time.sleep(currentMessage.timeout_duration)
+            bot.send_message(message.chat.id, currentMessage.message, reply_markup=types.ReplyKeyboardRemove())
+            user.state_id = currentMessage.next_state_id
+            db.session.commit()
+            send_message(user, message)
+        except Exception:
+            db.session.rollback()
+            raise
+    elif currentMessage.send_strategy == 4:
+        try:
+            # wait currentMessage.timeout_duration
+            time.sleep(currentMessage.timeout_duration)
+            bot.send_message(message.chat.id, currentMessage.message, reply_markup=types.ReplyKeyboardRemove())
+            user.state_id += 1
+            db.session.commit()
+        #       Send ending message
+        except Exception:
+            db.session.rollback()
+            raise
+
+
+def generate_user_action(bot_message: BotMessage):
+    if bot_message.actions:
+        keyboard = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+        for action in bot_message.actions:
+            keyboard.add(types.KeyboardButton(text=action.user_phrase))
+    else:
+        keyboard = types.ReplyKeyboardRemove()
     return keyboard
