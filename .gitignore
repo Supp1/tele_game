@@ -4,3 +4,4 @@ static
 venv/
 ngrok.exe
 sqlite3.exe
+*.db
