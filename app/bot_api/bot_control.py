@@ -31,26 +31,30 @@ def send_welcome(message):
 
 @bot.message_handler(regexp='^паспорт\s*')
 def get_bot_info(message):
+    # Персона рандомная, или созданная преждевременно?
+    # Если рандомная, возможно в ней хранить chat_id???
+    persona = Persona.query\
+        .get(users_services.get_user(message.chat.id).persona_id)
     print('passport')
-    a = random.randint(1, 10) * 20
+    # a = random.randint(1, 10) * 20
     #
     # bot.send_message(message.chat.id, 'Сила:')
     # bot.send_message(message.chat.id, a)
     #
-    b = random.randint(10, 120)
+    # b = random.randint(10, 120)
     # bot.send_message(message.chat.id, 'Интеллект:')
     # bot.send_message(message.chat.id, b)
     #
-    c = random.randint(1, 10)
+    # c = random.randint(1, 10)
     # bot.send_message(message.chat.id, 'Ловкость:')
     # bot.send_message(message.chat.id, c)
 
     bot.send_message(
         message.chat.id,
         f"""     
-*  Жим:*  {a} 
-*  ICQ:*  {b}      
-*  Бег:*  {c}
+*  Жим:*  {persona.strength} 
+*  ICQ:*  {persona.intelligence}      
+*  Бег:*  {persona.agility}
             """,
         parse_mode='MarkdownV2'
     )
@@ -72,8 +76,6 @@ def get_bot_info(message):
 
 @bot.message_handler(content_types=["text"])
 def handle_messages(message):
-    print(message.text)
-    print(re.search('^паспорт\s*', message.text))
     user = users_services.get_user(message.chat.id)
     if user:
 
